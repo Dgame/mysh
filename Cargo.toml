@@ -1,0 +1,10 @@
+[package]
+name = "mysh"
+version = "0.1.0"
+authors = ["Randy Schütt <rswhite4@googlemail.com>"]
+edition = "2018"
+
+[dependencies]
+crossterm = { version = "0.9.3", default-features = false, features = ["screen", "terminal", "cursor", "style", "input"] }
+#whoami = "0.5.0"
+#colored = "1.7.0"
