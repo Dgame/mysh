@@ -1,0 +1,5 @@
+prompt = """
+{user} at {host} in {dir}
+$
+"""
+line_length = 100
