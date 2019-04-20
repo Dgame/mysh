@@ -1,288 +1,172 @@
-use serde_derive::Deserialize;
-use crossterm::{
-    ClearType, Color, InputEvent, KeyEvent, RawScreen, Terminal, TerminalCursor, TerminalInput,
-};
-use std::rc::Rc;
+use std::io::{Stdout, Write};
+use termion::raw::RawTerminal;
+use termion::{clear, color, cursor};
 
-trait Drawable {
-    fn render_on(&self, shell: &Shell);
+pub struct RenderTarget<'a> {
+    terminal: &'a mut RawTerminal<Stdout>,
+    ypos: u16,
 }
 
-struct Cell {
-    ch: char,
-    fg: Color,
-    bg: Color,
-}
-
-impl Cell {
-    fn new(ch: char) -> Self {
-        Self {
-            ch,
-            fg: Color::Grey,
-            bg: Color::Black,
-        }
-    }
-
-    fn colorize(&mut self, fg: Option<Color>, bg: Option<Color>) {
-        if let Some(fg) = fg {
-            self.fg = fg;
-        }
-
-        if let Some(bg) = bg {
-            self.bg = bg;
-        }
-    }
-}
-
-impl Drawable for Cell {
-    fn render_on(&self, shell: &Shell) {
-        unimplemented!()
-    }
+pub trait Drawable {
+    fn render_on<'a>(&self, target: &mut RenderTarget<'a>);
 }
 
 pub trait Shell {
-    fn get_terminal(&self) -> &Terminal;
-    fn get_input(&self) -> &TerminalInput;
-    fn get_cursor(&mut self) -> &mut TerminalCursor;
+    fn clear(&mut self);
+    fn run(&mut self);
     fn render(&mut self);
-    fn draw(&self, d: &Drawable);
 }
 
-#[derive(Default, Clone)]
-struct Position {
-    x: u16,
-    y: u16,
+pub struct Cell {
+    ch: char,
+    fg: Box<color::Color>,
+    bg: Box<color::Color>,
 }
 
-impl Position {
-    fn get(&self) -> (u16, u16) {
-        (self.x, self.y)
-    }
+pub trait Line: Drawable {
+    fn remove(&mut self);
+    fn insert(&mut self, ch: char);
+    fn move_left(&mut self);
+    fn move_right(&mut self);
 }
 
-#[derive(Deserialize)]
-struct Config {
-    pub prompt: String,
-    pub line_length: usize,
-}
-
-fn fmt_prompt(prompt: &str) -> String {
-    use std::env;
-
-    if prompt.is_empty() {
-        String::from("$ ")
-    } else {
-        prompt
-            .replace("{user}", whoami::username().as_str())
-            .replace("{host}", whoami::hostname().as_str())
-            .replace(
-                "{dir}",
-                env::current_dir()
-                    .map(|dir| dir.display().to_string())
-                    .unwrap_or(String::new())
-                    .as_str(),
-            )
-    }
-}
-
-struct Prompt {
-    lines: Vec<String>,
-}
-
-impl Prompt {
-    fn create_from(config: &Config) -> Self {
-        Self {
-            lines: fmt_prompt(&config.prompt)
-                .lines()
-                .map(|line| line.trim_start())
-                .filter(|line| line.is_empty())
-                .map(|line| line.to_string())
-                .collect(),
-        }
-    }
-}
-
-impl Drawable for Prompt {
-    fn render_on(&self, shell: &Shell) {
-        let term = shell.get_terminal();
-        //let mut cursor = shell.get_cursor();
-
-        for line in self.lines.iter() {
-            term.write(line);
-            //cursor.move_down(1);
-            //cursor.goto(0, 0);
-        }
-    }
-}
-
-struct Line {
+pub struct MyLine {
     buffer: String,
-    capacity: usize,
-    //position: Rc<Position>,
+    xpos: u16,
 }
 
-impl Line {
-    fn with_capacity(capacity: usize/*, position: Rc<Position>*/) -> Self {
+impl MyLine {
+    pub fn new(capacity: u16) -> Self {
         Self {
-            buffer: String::with_capacity(capacity),
-            //position,
-            capacity,
-        }
-    }
-
-    fn insert_at(&mut self, idx: usize, ch: char) {
-        self.buffer.insert(idx, ch);
-        //self.position.x += 1;
-    }
-/*
-    fn insert_at_x(&mut self, ch: char) {
-        self.insert_at(self.position.x as usize, ch);
-    }
-*/
-    fn remove_at(&mut self, idx: usize) {
-        self.buffer.remove(idx);
-    }
-/*
-    fn remove_at_x(&mut self) {
-        self.remove_at(self.position.x as usize)
-    }
-*/
-    fn len(&self) -> usize {
-        self.buffer.len()
-    }
-
-    fn new(&self) -> Self {
-        Self::with_capacity(self.capacity/*, self.position.clone()*/)
-    }
-}
-
-impl Drawable for Line {
-    fn render_on(&self, shell: &Shell) {
-        for ch in self.buffer.chars() {
-            shell.get_terminal().write(ch);
+            buffer: String::with_capacity(capacity as usize),
+            xpos: 0,
         }
     }
 }
 
-fn read_config() -> Result<Config, String> {
-    use std::io::Read;
+impl Line for MyLine {
+    fn remove(&mut self) {
+        self.buffer.remove(self.xpos as usize);
+        self.move_left();
+    }
 
-    let mut file = std::fs::File::open("mysh.toml").map_err(|e| e.to_string())?;
-    let mut content = String::new();
-    file.read_to_string(&mut content)
-        .map_err(|e| e.to_string())?;
+    fn insert(&mut self, ch: char) {
+        self.buffer.insert(self.xpos as usize, ch);
+        self.move_right();
+    }
 
-    toml::from_str(&content).map_err(|e| e.to_string())
+    fn move_left(&mut self) {
+        self.xpos -= 1;
+    }
+
+    fn move_right(&mut self) {
+        self.xpos += 1;
+    }
+}
+
+impl Drawable for MyLine {
+    fn render_on<'a>(&self, target: &mut RenderTarget<'a>) {
+        let len = self.buffer.len() as u16;
+        if self.xpos < len {
+            let left = len - self.xpos;
+            write!(
+                target.terminal,
+                "{}{}{}{}",
+                cursor::Goto(1, target.ypos),
+                clear::CurrentLine,
+                self.buffer,
+                cursor::Left(left)
+            )
+                .unwrap();
+        } else {
+            write!(
+                target.terminal,
+                "{}{}{}",
+                cursor::Goto(1, target.ypos),
+                clear::CurrentLine,
+                self.buffer
+            )
+                .unwrap();
+        }
+        target.terminal.flush().unwrap();
+    }
 }
 
 pub struct MyShell {
-    terminal: Terminal,
-    cursor: TerminalCursor,
-    input: TerminalInput,
-    prompt: Prompt,
-    line: Line,
-    position: Position, //Rc<Position>,
-    config: Config,
+    terminal: RawTerminal<Stdout>,
+    line: Box<Line>,
+    ypos: u16,
+    line_factory: Box<Fn() -> Box<Line>>,
 }
 
 impl MyShell {
-    pub fn new() -> Self {
-        let config = read_config().expect("Could not load mysh.toml");
-        RawScreen::into_raw_mode().unwrap();
-
-        let position = Position::default();//Rc::new(Position::default());
+    pub fn new<F: Fn() -> Box<Line> + 'static>(line_factory: F) -> Self {
+        use std::io;
+        use termion::raw::IntoRawMode;
 
         Self {
-            terminal: crossterm::terminal(),
-            cursor: crossterm::cursor(),
-            input: crossterm::input(),
-            line: Line::with_capacity(config.line_length/*, position.clone()*/),
-            position,
-            prompt: Prompt::create_from(&config),
-            config,
+            terminal: io::stdout().into_raw_mode().unwrap(),
+            line: line_factory(),
+            ypos: 1,
+            line_factory: Box::new(line_factory),
         }
     }
 
-    pub fn clear(&self) {
-        self.terminal.clear(ClearType::All);
-    }
-
-    pub fn execute(&mut self) {
-        let mut stdin = self.input.read_sync();
-
-        loop {
-            self.render();
-
-            if let Some(event) = stdin.next() {
-                if let InputEvent::Keyboard(key_event) = event {
-                    match key_event {
-                        KeyEvent::Char(ch) => {
-                            if ch == '\n' {
-                                self.cursor.move_down(1);
-                                self.position.y += 1;
-
-                                self.line = self.line.new();
-                            } else {
-                                self.line.insert_at(self.position.x as usize, ch);
-                                self.position.x += 1;
-                            }
-                        }
-                        KeyEvent::Backspace => {
-                            if self.position.x > 0 {
-                                self.position.x -= 1;
-                                //self.line.remove_at_x();
-                                self.line.remove_at(self.position.x as usize);
-                            }
-                        }
-                        KeyEvent::Delete => {
-                            if self.position.x > 0 && (self.position.x as usize) < self.line.len() {
-                                //self.line.remove_at_x();
-                                self.line.remove_at(self.position.x as usize);
-                            }
-                        }
-                        KeyEvent::Left => {
-                            self.cursor.move_left(1);
-                            self.position.x -= 1;
-                        }
-                        KeyEvent::Esc => break,
-                        _ => {
-                            dbg!(key_event);
-                        }
-                    }
-                }
-            }
-        }
+    fn newline(&mut self) {
+        self.ypos += 1;
+        write!(
+            self.terminal,
+            "{}{}{}",
+            cursor::Goto(1, self.ypos),
+            clear::CurrentLine,
+            cursor::Down(1)
+        )
+            .unwrap();
+        self.line = (self.line_factory)();
     }
 }
 
 impl Shell for MyShell {
-    fn get_terminal(&self) -> &Terminal {
-        &self.terminal
+    fn clear(&mut self) {
+        write!(self.terminal, "{}{}", clear::All, cursor::Goto(1, 1)).unwrap();
+        self.terminal.flush().unwrap();
     }
 
-    fn get_input(&self) -> &TerminalInput {
-        &self.input
-    }
+    fn run(&mut self) {
+        use std::io::stdin;
+        use termion::event::Key;
+        use termion::input::TermRead;
 
-    fn get_cursor(&mut self) -> &mut TerminalCursor {
-        &mut self.cursor
-    }
+        'L1: loop {
+            for key in stdin().keys() {
+                match key.unwrap() {
+                    Key::Esc => break 'L1,
+                    Key::Char(ch) => {
+                        if ch == '\n' {
+                            self.newline();
+                        } else {
+                            self.line.insert(ch);
+                        }
+                    }
+                    Key::Backspace => self.line.remove(),
+                    Key::Alt(c) => println!("Alt-{}", c),
+                    Key::Ctrl(c) => println!("Ctrl-{}", c),
+                    Key::Left => self.line.move_left(),
+                    Key::Right => self.line.move_right(),
+                    Key::Down => println!("<down>"),
+                    _ => println!("Other"),
+                }
 
-    fn render(&mut self) {
-        let (x, y) = self.position.get();
-
-        self.cursor.goto(0, y);
-        self.terminal.clear(ClearType::CurrentLine);
-
-        self.draw(&self.prompt);
-        self.draw(&self.line);
-
-        if (x as usize) != self.line.len() {
-            self.cursor.goto(x as u16, y);
+                self.render();
+            }
         }
     }
 
-    fn draw(&self, d: &Drawable) {
-        d.render_on(self);
+    fn render(&mut self) {
+        self.line.render_on(&mut RenderTarget {
+            terminal: &mut self.terminal,
+            ypos: self.ypos,
+        });
+        self.terminal.flush().unwrap();
     }
 }

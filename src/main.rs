@@ -1,8 +1,9 @@
+use crate::shell::Shell;
+
 mod shell;
 
 fn main() {
-    use crate::shell::MyShell;
-
-    let mut shell = MyShell::new();
-    shell.execute();
+    let mut shell = shell::MyShell::new(move || Box::new(shell::MyLine::new(120)));
+    shell.clear();
+    shell.run();
 }
