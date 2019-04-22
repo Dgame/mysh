@@ -1,5 +1,7 @@
-prompt = """
-{user} at {host} in {dir}
-$
-"""
-line_length = 100
+#prompt = "{user} at {host} in {dir}\r\n$ "
+[prompt]
+user = {render = true, color = {red = 206, green = 6, blue = 123}}
+caret = {render = true, on_newline = true }
+
+[line]
+capacity = 100
