@@ -31,22 +31,8 @@ impl Prompt {
 
 impl Drawable for Prompt {
     fn render_on(&self, target: &mut RenderTarget) {
-        //        use termion::{clear, color, cursor};
-        //        write!(
-        //            target.terminal,
-        //            "{}{}{}",
-        //            cursor::Goto(1, target.cursor.y),
-        //            clear::CurrentLine,
-        //            self.prompt
-        //        )
-        //        .unwrap();
-
         for widget in self.widgets.iter() {
             widget.render_on(target);
         }
-
-        //        // TODO: in Caret Widget auslagern
-        //        target.cursor.y += 1;
-        //        target.cursor.x += 3;
     }
 }

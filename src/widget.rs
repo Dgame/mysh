@@ -1,6 +1,5 @@
 use crate::config;
 use crate::drawable::{Drawable, RenderTarget};
-use std::env::current_dir;
 use std::io::Write;
 use termion::color::{self, Fg, Rgb, Reset};
 
@@ -27,7 +26,7 @@ impl Widget for User {
 }
 
 impl Drawable for User {
-    fn render_on<'a>(&self, target: &mut RenderTarget) {
+    fn render_on(&self, target: &mut RenderTarget) {
         let (r, g, b) = self.config.color.rgb();
         let text = whoami::username();
 
@@ -58,14 +57,14 @@ impl Drawable for Location {
     fn render_on(&self, target: &mut RenderTarget) {
         use std::env;
 
-        let cur_dir = current_dir()
+        let cur_dir = env::current_dir()
             .map(|dir| dir.as_os_str().to_string_lossy().to_string())
             .unwrap();
         if let Some(ref user) = self.user {
             user.render_on(target);
         }
 
-        write!(target.terminal, "{reset} in {color}{dir}", reset = Fg(Reset), color = Fg(color::LightGreen), dir = cur_dir);
+        write!(target.terminal, "{reset} in {color}{dir}", reset = Fg(Reset), color = Fg(color::LightGreen), dir = cur_dir).unwrap();
     }
 }
 
