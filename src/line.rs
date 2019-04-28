@@ -28,8 +28,10 @@ impl MyLine {
 
 impl Line for MyLine {
     fn remove(&mut self) {
-        self.cells.remove(self.xpos as usize);
-        self.move_left();
+        if self.xpos > 0 {
+            self.cells.remove((self.xpos - 1) as usize);
+            self.move_left();
+        }
     }
 
     fn insert(&mut self, ch: char) {
@@ -49,6 +51,7 @@ impl Line for MyLine {
         Box::new(Self::new(&self.config))
     }
 }
+
 
 impl Drawable for MyLine {
     fn render_on(&self, target: &mut RenderTarget) {
@@ -82,3 +85,4 @@ impl Drawable for MyLine {
         }
     }
 }
+
