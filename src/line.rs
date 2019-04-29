@@ -52,7 +52,6 @@ impl Line for MyLine {
     }
 }
 
-
 impl Drawable for MyLine {
     fn render_on(&self, target: &mut RenderTarget) {
         use std::io::Write;
@@ -85,4 +84,3 @@ impl Drawable for MyLine {
         }
     }
 }
-

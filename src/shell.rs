@@ -38,7 +38,12 @@ impl MyShell {
         self.cursor.y += 2;
         self.cursor.x = 0;
 
-        write!(self.terminal, "{}", cursor::Goto(self.cursor.x, self.cursor.y)).unwrap();
+        write!(
+            self.terminal,
+            "{}",
+            cursor::Goto(self.cursor.x, self.cursor.y)
+        )
+        .unwrap();
         self.line = self.line.newline();
     }
 

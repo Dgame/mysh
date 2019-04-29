@@ -1,7 +1,7 @@
 use crate::config;
 use crate::drawable::{Drawable, RenderTarget};
 use std::io::Write;
-use termion::color::{self, Fg, Rgb, Reset};
+use termion::color::{self, Fg, Reset, Rgb};
 
 pub trait Widget: Drawable {
     fn should_render(&self) -> bool;
@@ -64,7 +64,14 @@ impl Drawable for Location {
             user.render_on(target);
         }
 
-        write!(target.terminal, "{reset} in {color}{dir}", reset = Fg(Reset), color = Fg(color::LightGreen), dir = cur_dir).unwrap();
+        write!(
+            target.terminal,
+            "{reset} in {color}{dir}",
+            reset = Fg(Reset),
+            color = Fg(color::LightGreen),
+            dir = cur_dir
+        )
+        .unwrap();
     }
 }
 
@@ -103,9 +110,9 @@ impl Drawable for Caret {
             self.config.user.to_owned()
         };
 
+        target.cursor.x = text.len() as u16 + 1;
         if self.is_on_newline() {
             target.cursor.y += 1;
-            target.cursor.x = text.len() as u16 + 1;
 
             write!(
                 target.terminal,
@@ -116,8 +123,6 @@ impl Drawable for Caret {
             )
             .unwrap();
         } else {
-            target.cursor.x += text.len() as u16 + 1;
-
             write!(
                 target.terminal,
                 "{color}{text}",
