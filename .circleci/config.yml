@@ -11,7 +11,7 @@ jobs:
                     name:    Install Rust
                     command: |
                              apt update && apt install --yes curl gcc
-                             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
+                             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
                              source $HOME/.cargo/env
             -   run:
                     name:    Check Code
