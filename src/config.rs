@@ -69,9 +69,15 @@ impl Default for Caret {
     }
 }
 
+fn default_padding() -> u16 {
+    1
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Line {
     pub capacity: u16,
+    #[serde(default = "default_padding")]
+    pub left_padding: u16,
     #[serde(default)]
     pub color: Color,
 }
@@ -80,6 +86,7 @@ impl Default for Line {
     fn default() -> Self {
         Self {
             capacity: 1024,
+            left_padding: default_padding(),
             color: Color::default(),
         }
     }
