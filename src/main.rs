@@ -6,10 +6,8 @@ use std::io::Read;
 mod cell;
 mod config;
 mod drawable;
-mod line;
-mod prompt;
+mod my;
 mod shell;
-mod widget;
 
 fn load_config() -> std::io::Result<String> {
     let mut file = File::open("mysh.toml")?;
@@ -20,15 +18,21 @@ fn load_config() -> std::io::Result<String> {
 }
 
 fn main() {
+    use flexi_logger::{Duplicate, Logger};
+
+    Logger::with_str("info, mysh = debug")
+        .log_to_file()
+        .duplicate_to_stderr(Duplicate::Warn)
+        .start()
+        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+
     let config = if let Ok(content) = load_config() {
         toml::from_str(&content).unwrap()
     } else {
         Config::default()
     };
 
-    //    dbg!(config);
-
-    let mut shell = shell::MyShell::new(&config, move |line| Box::new(line::MyLine::new(line)));
+    let mut shell = my::Shell::new(&config);
     shell.clear();
     shell.run();
 }

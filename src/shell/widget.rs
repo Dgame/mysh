@@ -1,7 +1,6 @@
-use crate::config;
-use crate::drawable::{Drawable, RenderTarget};
-use std::io::Write;
-use termion::color::{self, Fg, Reset, Rgb};
+use crate::drawable::Drawable;
+use crate::{config, shell};
+use termion::color::{self, Rgb};
 
 pub trait Widget: Drawable {
     fn should_render(&self) -> bool;
@@ -26,20 +25,11 @@ impl Widget for User {
 }
 
 impl Drawable for User {
-    fn render_on(&self, target: &mut RenderTarget) {
+    fn render_on(&self, term: &mut shell::Terminal) {
         let (r, g, b) = self.config.color.rgb();
         let text = whoami::username();
 
-        target.cursor.x += text.len() as u16;
-
-        write!(
-            target.terminal,
-            "{reset}{color}{text}",
-            reset = Fg(Reset),
-            color = Fg(Rgb(r, g, b)),
-            text = text
-        )
-        .unwrap();
+        term.in_color(Some(&Rgb(r, g, b))).write_text(&text);
     }
 }
 
@@ -54,24 +44,19 @@ impl Widget for Location {
 }
 
 impl Drawable for Location {
-    fn render_on(&self, target: &mut RenderTarget) {
+    fn render_on(&self, term: &mut shell::Terminal) {
         use std::env;
 
         let cur_dir = env::current_dir()
             .map(|dir| dir.as_os_str().to_string_lossy().to_string())
             .unwrap();
+
         if let Some(ref user) = self.user {
-            user.render_on(target);
+            user.render_on(term);
         }
 
-        write!(
-            target.terminal,
-            "{reset} in {color}{dir}",
-            reset = Fg(Reset),
-            color = Fg(color::LightGreen),
-            dir = cur_dir
-        )
-        .unwrap();
+        term.in_color(None).write_text(" in ");
+        term.in_color(Some(&color::LightGreen)).write_text(&cur_dir);
     }
 }
 
@@ -100,9 +85,7 @@ impl Widget for Caret {
 }
 
 impl Drawable for Caret {
-    fn render_on(&self, target: &mut RenderTarget) {
-        use termion::cursor;
-
+    fn render_on(&self, term: &mut shell::Terminal) {
         let (r, g, b) = self.config.color.rgb();
         let text = if self.is_admin {
             self.config.admin.to_owned()
@@ -110,26 +93,12 @@ impl Drawable for Caret {
             self.config.user.to_owned()
         };
 
-        target.cursor.x = text.len() as u16 + 1;
         if self.is_on_newline() {
-            target.cursor.y += 1;
-
-            write!(
-                target.terminal,
-                "{}{color}{text}",
-                cursor::Goto(1, target.cursor.y),
-                color = Fg(Rgb(r, g, b)),
-                text = text
-            )
-            .unwrap();
+            term.newline()
+                .in_color(Some(&Rgb(r, g, b)))
+                .write_text(&text);
         } else {
-            write!(
-                target.terminal,
-                "{color}{text}",
-                color = Fg(Rgb(r, g, b)),
-                text = text
-            )
-            .unwrap();
+            term.in_color(Some(&Rgb(r, g, b))).write_text(&text);
         }
     }
 }
