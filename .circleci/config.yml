@@ -1,32 +1,31 @@
 version: 2.1
 jobs:
     build:
-        parallelism:       3
         docker:
-            - image: abronan/rust-circleci:latest
+            -   image: abronan/rust-circleci:latest
     steps:
         - checkout
-        - restore_cache:
-              key: project-cache
-        - run:
-              name: Check formatting
-              command: |
-                  rustfmt --version
-                  cargo fmt -- --write-mode=diff
-        - run:
-              name: Stable Build
-              command: |
-                  rustc --version --verbose
-                  cargo --version --verbose
-                  cargo build
-        - run:
-              name: Test
-              command: cargo test
-        - run:
-              name: Upload Coverage
-              command: ./scripts/codecov.sh
-        - save_cache:
-              key: project-cache
-              paths:
-                  - "~/.cargo"
-                  - "./target"
+        -   restore_cache:
+                key: project-cache
+        -   run:
+                name:    Check formatting
+                command: |
+                         rustfmt --version
+                         cargo fmt -- --write-mode=diff
+        -   run:
+                name:    Stable Build
+                command: |
+                         rustc --version --verbose
+                         cargo --version --verbose
+                         cargo build
+        -   run:
+                name:    Test
+                command: cargo test
+        -   run:
+                name:    Upload Coverage
+                command: ./scripts/codecov.sh
+        -   save_cache:
+                key: project-cache
+                paths:
+                    - "~/.cargo"
+                    - "./target"
