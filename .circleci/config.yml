@@ -12,34 +12,23 @@ jobs:
 
             -   run:
                     name:              Setup build environment
-                    command:           |
-                                       apt update
-                                       apt install -y curl wget build-essential zlib1g-dev python libcurl4-openssl-dev libelf-dev libdw-dev cmake binutils-dev libiberty-dev
-                                       # if there is no `rust-toolchain` file in the rust project, please specify the default toolchain.
-                                       # example: `--default-tolchain stable` or `--default-toolchain nightly`
-                                       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --no-modify-path --default-toolchain none -y;
-                                       source $HOME/.cargo/env
-                    no_output_timeout: 1800s
+                    command:           curl https://sh.rustup.rs -sSf | sh
+            -   run:
+                    name:    Setup rustup components
+                    command: rustup component add rustfmt
+                             rustup component add clippy
 
             -   run:
                     name:    Format
-                    command: |
-                             export PATH=~/.cargo/bin:$PATH
-                             rustup component add rustfmt
-                             cargo fmt -- --check
+                    command: cargo fmt -- --check
 
             -   run:
                     name:    Clippy
-                    command: |
-                             export PATH=~/.cargo/bin:$PATH
-                             rustup component add clippy
-                             cargo clippy --all
+                    command: cargo clippy --all
 
             -   run:
                     name:    Test
-                    command: |
-                             export PATH=~/.cargo/bin:$PATH
-                             export RUST_BACKTRACE=1
+                    command: export RUST_BACKTRACE=1
                              cargo test
 
 workflows:
