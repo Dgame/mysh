@@ -6,7 +6,7 @@ jobs:
         steps:
             - checkout
             -   restore_cache:
-                    key: cache
+                    key: mysh
             -   run:
                     command: |
                              apt update && apt install --yes curl gcc
@@ -31,7 +31,7 @@ jobs:
                     command: |
                              cargo test --verbose
             -   save_cache:
-                    key: cache
+                    key: mysh
                     paths:
                         - "~/.cargo"
                         - "./target"
