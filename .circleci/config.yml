@@ -3,36 +3,30 @@ jobs:
     build:
         parallelism:       3
         docker:
-            -   image: ubuntu:18.04
-
-        working_directory: ~/mysh
-
-        steps:
-            - checkout
-
-            -   run:
-                    name:              Setup build environment
-                    command:           curl https://sh.rustup.rs -sSf | sh
-            -   run:
-                    name:    Setup rustup components
-                    command: rustup component add rustfmt
-                             rustup component add clippy
-
-            -   run:
-                    name:    Format
-                    command: cargo fmt -- --check
-
-            -   run:
-                    name:    Clippy
-                    command: cargo clippy --all
-
-            -   run:
-                    name:    Test
-                    command: export RUST_BACKTRACE=1
-                             cargo test
-
-workflows:
-    version: 2.1
-    build:
-        jobs:
-            - build
+            - image: abronan/rust-circleci:latest
+    steps:
+        - checkout
+        - restore_cache:
+              key: project-cache
+        - run:
+              name: Check formatting
+              command: |
+                  rustfmt --version
+                  cargo fmt -- --write-mode=diff
+        - run:
+              name: Stable Build
+              command: |
+                  rustc --version --verbose
+                  cargo --version --verbose
+                  cargo build
+        - run:
+              name: Test
+              command: cargo test
+        - run:
+              name: Upload Coverage
+              command: ./scripts/codecov.sh
+        - save_cache:
+              key: project-cache
+              paths:
+                  - "~/.cargo"
+                  - "./target"
