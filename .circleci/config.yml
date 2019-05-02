@@ -1,0 +1,35 @@
+version: 2
+jobs:
+    build:
+        docker:
+            -   image: ubuntu:latest
+        steps:
+            - checkout
+            -   run:
+                    name:    Install Rust
+                    command: |
+                             apt update && apt install --yes curl gcc
+                             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+                             source $HOME/.cargo/env
+            -   run:
+                    name:    Check Code
+                    command: |
+                             export PATH=~/.cargo/bin:$PATH
+                             cargo c
+            -   run:
+                    name:    Check Format
+                    command: |
+                             export PATH=~/.cargo/bin:$PATH
+                             rustup component add rustfmt
+                             cargo fmt -- --check
+            -   run:
+                    name:    Check Clippy
+                    command: |
+                             export PATH=~/.cargo/bin:$PATH
+                             rustup component add clippy
+                             cargo clippy --all
+            -   run:
+                    name:    Test
+                    command: |
+                             export PATH=~/.cargo/bin:$PATH
+                             cargo test --verbose
