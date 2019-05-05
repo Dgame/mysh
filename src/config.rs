@@ -69,7 +69,7 @@ impl Default for Caret {
     }
 }
 
-fn default_padding() -> u16 {
+fn default_padding() -> u8 {
     1
 }
 
@@ -77,7 +77,7 @@ fn default_padding() -> u16 {
 pub struct Line {
     pub capacity: u16,
     #[serde(default = "default_padding")]
-    pub left_padding: u16,
+    pub left_padding: u8,
     #[serde(default)]
     pub color: Color,
 }

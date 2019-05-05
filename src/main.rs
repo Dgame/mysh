@@ -3,7 +3,6 @@ use crate::shell::Shell;
 use std::fs::File;
 use std::io::Read;
 
-mod cell;
 mod config;
 mod drawable;
 mod my;
