@@ -5,3 +5,6 @@ caret = {render = true, on_newline = true }
 
 [line]
 capacity = 100
+
+[colorize]
+command = {red = 0, green = 204, blue = 0}

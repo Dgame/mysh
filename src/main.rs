@@ -1,11 +1,17 @@
-use crate::config::Config;
-use crate::shell::Shell;
+#![allow(dead_code)]
+
 use std::fs::File;
 use std::io::Read;
 
+use crate::config::Config;
+use crate::shell::Shell;
+
+mod behaviour;
 mod config;
 mod drawable;
 mod my;
+mod path;
+mod pool;
 mod shell;
 
 fn load_config() -> std::io::Result<String> {

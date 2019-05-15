@@ -108,8 +108,14 @@ impl Default for Prompt {
     }
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Colorize {
+    pub command: Option<Color>,
+}
+
 #[derive(Debug, Default, Deserialize)]
 pub struct Config {
     pub prompt: Prompt,
     pub line: Line,
+    pub colorize: Colorize,
 }

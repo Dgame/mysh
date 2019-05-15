@@ -1,3 +1,4 @@
+use crate::behaviour::{ExecutableWordColorizer, WordColorizeBehaviour};
 use crate::config::Config;
 use crate::drawable::Drawable;
 use crate::my;
@@ -12,9 +13,15 @@ pub struct Shell {
 
 impl Shell {
     pub fn new(config: &Config) -> Self {
+        let mut behaviour = WordColorizeBehaviour::new(&config.colorize);
+        behaviour.add_colorizer(Box::new(ExecutableWordColorizer::new()));
+
+        let mut line = my::Line::new(&config.line);
+        line.add_behaviour(Box::new(behaviour));
+
         Self {
             terminal: my::Terminal::new(),
-            line: my::Line::new(&config.line),
+            line,
             prompt: shell::Prompt::new(&config.prompt),
         }
     }

@@ -1,3 +1,4 @@
+use crate::behaviour::Behaviour;
 use crate::drawable::Drawable;
 use crate::shell::line::XCursor;
 use crate::{config, shell};
@@ -30,6 +31,7 @@ pub struct Line {
     input: Vec<char>,
     config: config::Line,
     xcursor: MyXCursor,
+    behaviour: Vec<Box<Behaviour>>,
     padding: u8,
 }
 
@@ -41,8 +43,13 @@ impl Line {
             input: Vec::with_capacity(config.capacity as usize),
             config: config.clone(),
             xcursor: MyXCursor::new(),
+            behaviour: Vec::new(),
             padding: 0,
         }
+    }
+
+    pub fn add_behaviour(&mut self, behaviour: Box<Behaviour>) {
+        self.behaviour.push(behaviour);
     }
 }
 
@@ -93,30 +100,13 @@ impl shell::Line for Line {
 
 impl Drawable for Line {
     fn render_on(&self, term: &mut shell::Terminal) {
-        use termion::color;
-
         debug!("Draw the line");
 
-        let x = (self.padding + self.config.left_padding) as u16;
+        let x = u16::from(self.padding + self.config.left_padding);
         term.cursor().set_x(x).clear_after(); // Clean line after Prompt + Padding
 
-        let mut word = String::new();
-        for ch in self.input.iter() {
-            term.in_color(None).write(*ch);
-
-            if *ch == ' ' {
-                word.clear();
-            } else {
-                word.push(*ch);
-                let color: Option<&color::Color> = if word == "for" || word == "foreach" {
-                    Some(&color::LightGreen)
-                } else {
-                    None
-                };
-
-                term.cursor().move_left(word.len() as u16).clear_after();
-                term.in_color(color).write_text(&word);
-            }
+        for behaviour in self.behaviour.iter() {
+            behaviour.render(&self.input, term);
         }
 
         let len = self.input.len() as u16;
