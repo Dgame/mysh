@@ -26,7 +26,7 @@ impl Widget for User {
 
 impl Drawable for User {
     fn render_on(&self, term: &mut shell::Terminal) {
-        let (r, g, b) = self.config.color.rgb();
+        let config::Rgb(r, g, b) = self.config.color;
         let text = whoami::username();
 
         term.in_color(Some(&Rgb(r, g, b))).write_text(&text);
@@ -86,7 +86,7 @@ impl Widget for Caret {
 
 impl Drawable for Caret {
     fn render_on(&self, term: &mut shell::Terminal) {
-        let (r, g, b) = self.config.color.rgb();
+        let config::Rgb(r, g, b) = self.config.color;
         let text = if self.is_admin {
             self.config.admin.to_owned()
         } else {

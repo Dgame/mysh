@@ -25,8 +25,8 @@ impl ExecutableWordColorizer {
 impl Colorizer for ExecutableWordColorizer {
     fn colorize(&self, word: &str, config: &config::Colorize) -> Option<Rgb> {
         if self.os_path.contains(word) {
-            if let Some(ref color) = config.command {
-                Some(Rgb(color.red, color.green, color.blue))
+            if let Some(config::Rgb(r, g, b)) = config.command {
+                Some(Rgb(r, g, b))
             } else {
                 None
             }
