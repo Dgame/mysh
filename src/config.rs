@@ -1,25 +1,11 @@
 use serde_derive::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct Color {
-    pub red: u8,
-    pub green: u8,
-    pub blue: u8,
-}
+pub struct Rgb(pub u8, pub u8, pub u8);
 
-impl Color {
-    pub fn rgb(&self) -> (u8, u8, u8) {
-        (self.red, self.green, self.blue)
-    }
-}
-
-impl Default for Color {
+impl Default for Rgb {
     fn default() -> Self {
-        Self {
-            red: 245,
-            green: 245,
-            blue: 245,
-        }
+        Self(245, 245, 245)
     }
 }
 
@@ -32,7 +18,7 @@ pub struct User {
     #[serde(default = "render_always")]
     pub render: bool,
     #[serde(default)]
-    pub color: Color,
+    pub color: Rgb,
 }
 
 fn default_user_caret() -> String {
@@ -52,7 +38,7 @@ pub struct Caret {
     #[serde(default = "default_admin_caret")]
     pub admin: String,
     #[serde(default)]
-    pub color: Color,
+    pub color: Rgb,
     #[serde(default)]
     pub on_newline: bool,
 }
@@ -63,13 +49,13 @@ impl Default for Caret {
             render: true,
             user: default_user_caret(),
             admin: default_admin_caret(),
-            color: Color::default(),
+            color: Rgb::default(),
             on_newline: false,
         }
     }
 }
 
-fn default_padding() -> u16 {
+fn default_padding() -> u8 {
     1
 }
 
@@ -77,9 +63,9 @@ fn default_padding() -> u16 {
 pub struct Line {
     pub capacity: u16,
     #[serde(default = "default_padding")]
-    pub left_padding: u16,
+    pub left_padding: u8,
     #[serde(default)]
-    pub color: Color,
+    pub color: Rgb,
 }
 
 impl Default for Line {
@@ -87,7 +73,7 @@ impl Default for Line {
         Self {
             capacity: 1024,
             left_padding: default_padding(),
-            color: Color::default(),
+            color: Rgb::default(),
         }
     }
 }
@@ -108,8 +94,14 @@ impl Default for Prompt {
     }
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Colorize {
+    pub command: Option<Rgb>,
+}
+
 #[derive(Debug, Default, Deserialize)]
 pub struct Config {
     pub prompt: Prompt,
     pub line: Line,
+    pub colorize: Colorize,
 }

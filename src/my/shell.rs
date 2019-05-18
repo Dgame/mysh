@@ -1,3 +1,4 @@
+use crate::behaviour::{ExecutableWordColorizer, WordColorizeBehaviour};
 use crate::config::Config;
 use crate::drawable::Drawable;
 use crate::my;
@@ -12,9 +13,15 @@ pub struct Shell {
 
 impl Shell {
     pub fn new(config: &Config) -> Self {
+        let mut behaviour = WordColorizeBehaviour::new(&config.colorize);
+        behaviour.add_colorizer(Box::new(ExecutableWordColorizer::new()));
+
+        let mut line = my::Line::new(&config.line);
+        line.add_behaviour(Box::new(behaviour));
+
         Self {
             terminal: my::Terminal::new(),
-            line: my::Line::new(&config.line),
+            line,
             prompt: shell::Prompt::new(&config.prompt),
         }
     }
@@ -26,7 +33,7 @@ impl Shell {
 
     fn render_prompt(&mut self) {
         self.prompt.render_on(&mut self.terminal);
-        self.line.capture_cursor(self.terminal.cursor());
+        self.line.set_padding(self.terminal.cursor());
         self.terminal.flush();
     }
 
@@ -65,8 +72,8 @@ impl shell::Shell for Shell {
                     Key::Delete => self.line.remove_before(),
                     Key::Alt(c) => println!("Alt-{}", c),
                     Key::Ctrl(c) => println!("Ctrl-{}", c),
-                    Key::Left => self.line.move_left(),
-                    Key::Right => self.line.move_right(),
+                    Key::Left => self.line.cursor().move_left(),
+                    Key::Right => self.line.cursor().move_right(),
                     Key::Down => println!("<down>"),
                     _ => println!("Other"),
                 }
