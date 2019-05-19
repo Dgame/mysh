@@ -71,7 +71,12 @@ impl shell::Shell for Shell {
                     Key::Ctrl(c) => println!("Ctrl-{}", c),
                     Key::Left => self.line.cursor().move_left(),
                     Key::Right => self.line.cursor().move_right(),
-                    Key::Down => println!("<down>"),
+                    Key::Up => {
+                        if let Some(line) = self.history.get_previous() {
+                            self.line.set(line);
+                        }
+                    }
+                    Key::Down => self.history.reset_offset(),
                     _ => println!("Other"),
                 }
 

@@ -25,6 +25,11 @@ impl XCursor for MyXCursor {
         self.index += 1;
         debug!("Move XCursor to the right. x = {}", self.index);
     }
+
+    fn set_to(&mut self, x: u16) {
+        self.index = x;
+        debug!("Move XCursor to {}", self.index);
+    }
 }
 
 pub struct Line {
@@ -81,6 +86,11 @@ impl shell::Line for Line {
 
         self.input.insert(index, ch);
         self.xcursor.move_right();
+    }
+
+    fn set(&mut self, input: &str) {
+        self.input = input.chars().collect();
+        self.xcursor.set_to(input.len() as u16);
     }
 
     fn reset(&mut self) -> Option<String> {
