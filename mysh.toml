@@ -1,4 +1,3 @@
-#prompt = "{user} at {host} in {dir}\r\n$ "
 [prompt]
 user = {render = true, color = [206, 6, 123]}
 caret = {render = true, on_newline = true }

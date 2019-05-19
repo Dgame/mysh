@@ -3,12 +3,14 @@
 use std::fs::File;
 use std::io::Read;
 
+use crate::behaviour::{ExecutableWordColorizer, WordColorizeBehaviour};
 use crate::config::Config;
 use crate::shell::Shell;
 
 mod behaviour;
 mod config;
 mod drawable;
+mod history;
 mod my;
 mod path;
 mod pool;
@@ -37,7 +39,13 @@ fn main() {
         Config::default()
     };
 
-    let mut shell = my::Shell::new(&config);
+    let mut colorizer = WordColorizeBehaviour::new(&config.colorize);
+    colorizer.add_colorizer(Box::new(ExecutableWordColorizer::new()));
+
+    let mut line = my::Line::new(&config.line);
+    line.add_behaviour(Box::new(colorizer));
+
+    let mut shell = my::Shell::new(&config, Box::new(my::Terminal::new()), Box::new(line));
     shell.clear();
     shell.run();
 }

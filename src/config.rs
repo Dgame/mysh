@@ -99,9 +99,29 @@ pub struct Colorize {
     pub command: Option<Rgb>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct History {
+    pub filename: String,
+    pub size: usize,
+}
+
+impl Default for History {
+    fn default() -> Self {
+        Self {
+            size: 10_000,
+            filename: String::from("mysh-history.log"),
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize)]
 pub struct Config {
+    #[serde(default)]
     pub prompt: Prompt,
+    #[serde(default)]
     pub line: Line,
+    #[serde(default)]
     pub colorize: Colorize,
+    #[serde(default)]
+    pub history: History,
 }

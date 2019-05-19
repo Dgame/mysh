@@ -1,44 +1,41 @@
-use crate::behaviour::{ExecutableWordColorizer, WordColorizeBehaviour};
 use crate::config::Config;
 use crate::drawable::Drawable;
-use crate::my;
+use crate::history::History;
 use crate::shell::line::Line;
 use crate::shell::{self, Terminal};
 
 pub struct Shell {
-    terminal: my::Terminal,
-    line: my::Line,
+    terminal: Box<Terminal>,
+    line: Box<Line>,
     prompt: shell::Prompt,
+    history: History,
 }
 
 impl Shell {
-    pub fn new(config: &Config) -> Self {
-        let mut behaviour = WordColorizeBehaviour::new(&config.colorize);
-        behaviour.add_colorizer(Box::new(ExecutableWordColorizer::new()));
-
-        let mut line = my::Line::new(&config.line);
-        line.add_behaviour(Box::new(behaviour));
-
+    pub fn new(config: &Config, terminal: Box<Terminal>, line: Box<Line>) -> Self {
         Self {
-            terminal: my::Terminal::new(),
+            terminal,
             line,
             prompt: shell::Prompt::new(&config.prompt),
+            history: History::load(&config.history),
         }
     }
 
     fn newline(&mut self) {
         self.terminal.newline();
-        self.line.reset();
+        if let Some(input) = self.line.reset() {
+            self.history.insert(input);
+        }
     }
 
     fn render_prompt(&mut self) {
-        self.prompt.render_on(&mut self.terminal);
+        self.prompt.render_on(&mut *self.terminal);
         self.line.set_padding(self.terminal.cursor());
         self.terminal.flush();
     }
 
     fn render_line(&mut self) {
-        self.line.render_on(&mut self.terminal);
+        self.line.render_on(&mut *self.terminal);
         self.terminal.flush();
     }
 }

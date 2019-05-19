@@ -2,11 +2,11 @@ use crate::path::OsPath;
 use crate::{config, shell};
 use termion::color::{Color, Rgb};
 
-pub trait Behaviour {
+pub trait InputBehaviour {
     fn render(&self, input: &[char], term: &mut shell::Terminal);
 }
 
-pub trait Colorizer {
+pub trait WordColorizer {
     fn colorize(&self, word: &str, config: &config::Colorize) -> Option<Rgb>;
 }
 
@@ -22,7 +22,7 @@ impl ExecutableWordColorizer {
     }
 }
 
-impl Colorizer for ExecutableWordColorizer {
+impl WordColorizer for ExecutableWordColorizer {
     fn colorize(&self, word: &str, config: &config::Colorize) -> Option<Rgb> {
         if self.os_path.contains(word) {
             if let Some(config::Rgb(r, g, b)) = config.command {
@@ -38,7 +38,7 @@ impl Colorizer for ExecutableWordColorizer {
 
 pub struct WordColorizeBehaviour {
     config: config::Colorize,
-    colorizer: Vec<Box<Colorizer>>,
+    colorizer: Vec<Box<WordColorizer>>,
 }
 
 impl WordColorizeBehaviour {
@@ -49,7 +49,7 @@ impl WordColorizeBehaviour {
         }
     }
 
-    pub fn add_colorizer(&mut self, colorizer: Box<Colorizer>) {
+    pub fn add_colorizer(&mut self, colorizer: Box<WordColorizer>) {
         self.colorizer.push(colorizer);
     }
 
@@ -60,7 +60,17 @@ impl WordColorizeBehaviour {
     }
 }
 
-impl Behaviour for WordColorizeBehaviour {
+impl WordColorizeBehaviour {
+    fn redraw_colorized(&self, word: &str, term: &mut shell::Terminal) {
+        let color = self.find_color_for(&word);
+        let color: Option<&Color> = color.as_ref().map(|color| color as &dyn Color);
+
+        term.cursor().move_left(word.len() as u16).clear_after();
+        term.in_color(color).write_text(&word);
+    }
+}
+
+impl InputBehaviour for WordColorizeBehaviour {
     fn render(&self, input: &[char], term: &mut shell::Terminal) {
         let mut word = String::new();
         for ch in input.iter() {
@@ -70,11 +80,7 @@ impl Behaviour for WordColorizeBehaviour {
                 word.clear();
             } else {
                 word.push(*ch);
-                let color = self.find_color_for(&word);
-                let color: Option<&Color> = color.as_ref().map(|color| color as &dyn Color);
-
-                term.cursor().move_left(word.len() as u16).clear_after();
-                term.in_color(color).write_text(&word);
+                self.redraw_colorized(&word, term);
             }
         }
     }

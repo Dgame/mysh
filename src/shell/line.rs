@@ -11,6 +11,6 @@ pub trait Line: Drawable {
     fn remove_before(&mut self);
     fn cursor(&mut self) -> &mut XCursor;
     fn insert(&mut self, ch: char);
-    fn reset(&mut self);
+    fn reset(&mut self) -> Option<String>;
     fn set_padding(&mut self, cursor: &shell::Cursor);
 }

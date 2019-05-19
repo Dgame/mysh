@@ -1,4 +1,4 @@
-use crate::behaviour::Behaviour;
+use crate::behaviour::InputBehaviour;
 use crate::drawable::Drawable;
 use crate::shell::line::XCursor;
 use crate::{config, shell};
@@ -31,7 +31,7 @@ pub struct Line {
     input: Vec<char>,
     config: config::Line,
     xcursor: MyXCursor,
-    behaviour: Vec<Box<Behaviour>>,
+    behaviour: Vec<Box<InputBehaviour>>,
     padding: u8,
 }
 
@@ -48,7 +48,7 @@ impl Line {
         }
     }
 
-    pub fn add_behaviour(&mut self, behaviour: Box<Behaviour>) {
+    pub fn add_behaviour(&mut self, behaviour: Box<InputBehaviour>) {
         self.behaviour.push(behaviour);
     }
 }
@@ -83,11 +83,18 @@ impl shell::Line for Line {
         self.xcursor.move_right();
     }
 
-    fn reset(&mut self) {
+    fn reset(&mut self) -> Option<String> {
         debug!("Reset Line");
 
+        let input: String = self.input.iter().collect();
         self.input.clear();
         self.xcursor = MyXCursor::new();
+
+        if input.is_empty() {
+            None
+        } else {
+            Some(input)
+        }
     }
 
     fn set_padding(&mut self, cursor: &shell::Cursor) {
